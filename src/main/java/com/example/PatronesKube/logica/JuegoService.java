@@ -7,6 +7,7 @@ import com.example.PatronesKube.controller.dto.CriticaDTO;
 import com.example.PatronesKube.controller.dto.JuegoDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,8 @@ import java.util.stream.Collectors;
 public class JuegoService {
 
     JuegoJPA juegoJPA;
+    RestTemplate restTemplate;
+
 
     public JuegoORM añadirJuego(JuegoDTO juegoDTO) {
 
@@ -31,10 +34,25 @@ public class JuegoService {
         juegoJPA.save(juegoORM);
         return true;
     }
+    private void enviarNotificacion(JuegoDTO juegoDTO) {
+        String urlMicroservicio = "http://microservicio-service:8081/notificaciones/enviar";
+        String destinatario = juegoDTO.destinatario();
+        String asunto = "Nuevo juego registrado: " + juegoDTO.nombre();
+        String mensaje = "Se ha añadido un nuevo juego:\n" +
+                "Nombre: " + juegoDTO.nombre() + "\n" +
+                "Desarrollador: " + juegoDTO.desarrollador() + "\n" +
+                "Fecha de lanzamiento: " + juegoDTO.fechaLanzamiento();
+
+
+        restTemplate.postForObject(urlMicroservicio + "?destinatario=" + destinatario +
+                "&asunto=" + asunto +
+                "&mensaje=" + mensaje, null, String.class);
+    }
 
     public boolean añadirYGuardarJuego(JuegoDTO juegoDTO) {
         JuegoORM juegoORM = añadirJuego(juegoDTO);
         guardarJuego(juegoORM);
+        enviarNotificacion(juegoDTO);
         return true;
     }
 
